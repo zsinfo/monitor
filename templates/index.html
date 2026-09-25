@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>OrarioCloud - Elenco Scuole</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #0d1b2a; color: #e0e1dd; margin: 0; padding: 40px; }
+        h1 { color: #00b4d8; text-align: center; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background-color: #1b263b; border: 1px solid #415a77; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .school-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #415a77; flex-wrap: wrap; gap: 10px; }
+        .school-item:last-child { border-bottom: none; }
+        .school-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        a { background-color: #00b4d8; color: white; padding: 8px 14px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px; }
+        a:hover { background-color: #0077b6; }
+        form { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        input { padding: 10px; border-radius: 5px; border: 1px solid #415a77; background-color: #0d1b2a; color: white; font-size: 14px; }
+        button { background-color: #55a630; color: white; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #38b000; }
+        .error-box { background-color: #780000; color: white; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 14px; }
+        .delete-form { display: inline-flex; flex-direction: row; align-items: center; gap: 5px; margin: 0; }
+        .delete-form input { padding: 6px; width: 120px; font-size: 12px; }
+        .delete-btn { background-color: #d90429; padding: 6px 10px; font-size: 12px; border-radius: 5px; border: none; color: white; cursor: pointer; font-weight: bold; }
+        .delete-btn:hover { background-color: #ef233c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏫 OrarioCloud - Gestione Scuole</h1>
+
+        {% if errore == 'superuser' %}
+        <div class="error-box">⚠️ Password Superuser non valida! Impossibile aggiungere la scuola.</div>
+        {% endif %}
+
+        {% if errore == 'superuser_elimina' %}
+        <div class="error-box">⚠️ Password Superuser non valida! Impossibile eliminare la scuola.</div>
+        {% endif %}
+        
+        <div class="card">
+            <h2>Elenco Scuole Registrate</h2>
+            {% if scuole %}
+                {% for s in scuole %}
+                <div class="school-item">
+                    <div>
+                        <span style="font-size: 18px; font-weight: bold;">{{ s.nome_scuola }}</span>
+                        <div style="font-size: 13px; color: #8d99ae;">Codice: {{ s.codice_meccanografico }}</div>
+                    </div>
+                    <div class="school-actions">
+                        <!-- Tasto Monitor TV rimosso da qui e spostato nel pannello di segreteria -->
+                        <a href="/login/{{ s.id }}" style="background-color: #f77f00;">⚙️ Segreteria</a>
+                        
+                        <!-- Form di eliminazione protetto da Superuser -->
+                        <form action="/elimina-scuola/{{ s.id }}" method="post" class="delete-form" onsubmit="return confirm('Sei sicuro di voler eliminare definitivamente {{ s.nome_scuola }} e tutti i dati associati?');">
+                            <input type="password" name="super_password" placeholder="Pass Superuser" required>
+                            <button type="submit" class="delete-btn">Elimina</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #8d99ae; font-style: italic;">Nessuna scuola presente nel sistema.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>➕ Registra Nuova Scuola (Riservato Superuser)</h2>
+            <form action="/aggiungi-scuola" method="post">
+                <input type="password" name="super_password" placeholder="Password Superuser (Master Developer)" required>
+                <input type="text" name="nome_scuola" placeholder="Nome della Scuola (es. ITI Marconi)" required>
+                <input type="text" name="codice_meccanografico" placeholder="Codice Meccanografico (es. RMTF01000T)" required>
+                <input type="password" name="password_segreteria" placeholder="Password Iniziale Segreteria" required>
+                <button type="submit">Crea Scuola</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

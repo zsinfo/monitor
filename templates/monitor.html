@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitor Classi in Tempo Reale - {{ scuola.nome_scuola }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0d1b2a;
+            color: #e0e1dd;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+
+        h1 {
+            color: #00b4d8;
+            font-size: 26px;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .badge-ora {
+            background-color: #1b263b;
+            color: #fcbf49;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid #415a77;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .badge-pagina {
+            background-color: #1b263b;
+            color: #8d99ae;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #415a77;
+            font-size: 14px;
+        }
+
+        .btn-home {
+            background-color: #1b263b;
+            color: white;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            border: 1px solid #415a77;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-home:hover { background-color: #415a77; }
+
+        .avviso-bar {
+            background-color: #7f4f24;
+            border: 1px solid #bc6c25;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .avviso-label {
+            background-color: #bc6c25;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-right: 15px;
+            white-space: nowrap;
+        }
+
+        .avviso-testo {
+            color: #ffe8d6;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .grid-classi {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .classe-card, .colloquio-card {
+            background-color: #1b263b;
+            border: 1px solid #415a77;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .classe-nome {
+            color: #00b4d8;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #415a77;
+            padding-bottom: 8px;
+        }
+
+        .lezione-info {
+            font-size: 15px;
+            color: #e0e1dd;
+            margin-bottom: 8px;
+        }
+
+        .nessuna-lezione {
+            color: #8d99ae;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .pagina-slide {
+            display: none;
+        }
+        .pagina-slide.attiva {
+            display: block;
+        }
+
+        @media (max-width: 900px) {
+            .grid-classi { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .grid-classi { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <script>
+        // Rotazione automatica delle schermate ogni 15 secondi
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const slides = document.querySelectorAll('.pagina-slide');
+            let currentSlide = 0;
+            const totalSlides = slides.length;
+
+            if (totalSlides > 1) {
+                setInterval(() => {
+                    slides[currentSlide].classList.remove('attiva');
+                    currentSlide = (currentSlide + 1) % totalSlides;
+                    slides[currentSlide].classList.add('attiva');
+                }, 15000);
+            }
+        });
+    </script>
+</head>
+<body>
+
+    <div class="header-top">
+        <h1>Monitor Classi in Tempo Reale: {{ scuola.nome_scuola }}</h1>
+        <div class="header-right">
+            {% set total_classi_pages = ((scuola.classi | length) / 9) | round(method='ceil') | int %}
+            {% set has_colloqui = 1 if colloqui_oggi else 0 %}
+            {% set total_pages = (total_classi_pages if total_classi_pages > 0 else 1) + has_colloqui %}
+            
+            <div class="badge-pagina" id="badge-info">Rotazione Automatica TV</div>
+            <div class="badge-ora">📅 {{ giorno_corrente }} - {{ ora_corrente }}</div>
+            <a href="/" class="btn-home">🏠 Torna alla Home</a>
+        </div>
+    </div>
+
+    {% if scuola.avviso_globale %}
+    <div class="avviso-bar">
+        <div class="avviso-label">📢 AVVISO UFFICIALE:</div>
+        <div class="avviso-testo">
+            <marquee behavior="scroll" direction="left" scrollamount="5">
+                {{ scuola.avviso_globale }}
+            </marquee>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- CONTENITORE DELLE SLIDE (PAGINE) -->
+    <div id="slides-container">
+        {% if scuola.classi %}
+            <!-- Suddivisione delle classi in pagine da 9 -->
+            {% set classi_chunks = scuola.classi | batch(9) %}
+            {% set outer_loop = loop %}
+            {% for chunk in classi_chunks %}
+            <div class="pagina-slide {% if loop.first %}attiva{% endif %}">
+                <div style="margin-bottom: 10px; color: #8d99ae; font-size: 14px;">Classi (Pagina {{ loop.index }} di {{ loop.length }})</div>
+                <div class="grid-classi">
+                    {% for classe in chunk %}
+                    <div class="classe-card">
+                        <div>
+                            <div class="classe-nome">{{ classe.nome_classe }}</div>
+                            
+                            {% set ns = namespace(lezione_corrente=none, variazione_corrente=none) %}
+                            
+                            {% for orario in classe.orari %}
+                                {% if orario.giorno == giorno_corrente and orario.ora == ora_corrente %}
+                                    {% set ns.lezione_corrente = orario %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for var in classe.variazioni %}
+                                {% if var.data_variazione == data_oggi and (var.ora_lezione == ora_corrente or var.ora_lezione == 'Tutta la giornata') %}
+                                    {% set ns.variazione_corrente = var %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if ns.variazione_corrente %}
+                                <div style="background-color: #780000; color: white; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-size: 14px;">
+                                    <strong>⚡ {{ ns.variazione_corrente.tipo_variazione }}</strong>
+                                    {% if ns.variazione_corrente.descrizione %}
+                                        <div style="font-size: 13px; margin-top: 4px; color: #ffe8d6;">{{ ns.variazione_corrente.descrizione }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if ns.lezione_corrente %}
+                                <div class="lezione-info"><strong>📖 Materia:</strong> {{ ns.lezione_corrente.materia }}</div>
+                                <div class="lezione-info"><strong>👨‍🏫 Docente:</strong> {{ ns.lezione_corrente.docente }}</div>
+                                {% if ns.lezione_corrente.docente_sostegno %}
+                                    <div class="lezione-info" style="font-size: 13px; color: #adb5bd;"><strong>Sostegno:</strong> {{ ns.lezione_corrente.docente_sostegno }}</div>
+                                {% endif %}
+                                {% if ns.lezione_corrente.aula %}
+                                    <div class="lezione-info" style="font-size: 13px; color: #48cae4;"><strong>📍 Aula:</strong> {{ ns.lezione_corrente.aula }}</div>
+                                {% endif %}
+                            {% elif not ns.variazione_corrente %}
+                                <div class="nessuna-lezione">Nessuna lezione ({{ ora_corrente }}).</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="pagina-slide attiva">
+                <div style="text-align: center; color: #8d99ae; padding: 40px;">
+                    Nessuna classe registrata in questa scuola.
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- PAGINA DEDICATA AI COLLOQUI DEL GIORNO -->
+        {% if colloqui_oggi %}
+        <div class="pagina-slide {% if not scuola.classi %}attiva{% endif %}">
+            <div style="margin-bottom: 10px; color: #fcbf49; font-size: 16px; font-weight: bold;">📅 Ricevimento Docenti / Colloqui del Giorno ({{ giorno_corrente }})</div>
+            <div class="grid-classi">
+                {% for col in colloqui_oggi %}
+                <div class="colloquio-card">
+                    <div>
+                        <div class="classe-nome">👨‍🏫 Prof. {{ col.nome_professore }}</div>
+                        <div class="lezione-info"><strong>⏰ Ora:</strong> {{ col.ora_colloquio }}</div>
+                        {% if col.aula_ricevimento %}
+                            <div class="lezione-info" style="color: #48cae4;"><strong>📍 Aula Ricevimento:</strong> {{ col.aula_ricevimento }}</div>
+                        {% else %}
+                            <div class="lezione-info" style="color: #8d99ae; font-style: italic;">Aula non specificata</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Script per aggiornare l'intera pagina ogni 5 minuti per sincronizzare i dati freschi dal DB -->
+    <script>
+        setTimeout(function(){
+           window.location.reload();
+        }, 300000); // 5 minuti
+    </script>
+</body>
+</html>

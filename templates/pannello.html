@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Pannello Segreteria - {{ scuola.nome_scuola }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #0d1b2a; color: #e0e1dd; margin: 0; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #415a77; padding-bottom: 15px; margin-bottom: 25px; }
+        h1 { color: #00b4d8; margin: 0; font-size: 24px; }
+        .actions { display: flex; gap: 10px; }
+        .btn { background-color: #1b263b; color: white; padding: 8px 14px; text-decoration: none; border-radius: 5px; border: 1px solid #415a77; font-weight: bold; font-size: 14px; }
+        .btn:hover { background-color: #415a77; }
+        .btn-danger { background-color: #780000; }
+        .btn-danger:hover { background-color: #c1121f; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .card { background-color: #1b263b; border: 1px solid #415a77; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card-full { grid-column: span 2; }
+        h3 { color: #48cae4; margin-top: 0; border-bottom: 1px solid #415a77; padding-bottom: 8px; }
+        form { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        input, select, textarea { padding: 8px; border-radius: 5px; border: 1px solid #415a77; background-color: #0d1b2a; color: white; font-size: 13px; }
+        button { background-color: #00b4d8; color: white; padding: 9px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0077b6; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>⚙️ Pannello Segreteria: {{ scuola.nome_scuola }}</h1>
+            <span style="font-size: 13px; color: #8d99ae;">Codice Meccanografico: {{ scuola.codice_meccanografico }}</span>
+        </div>
+        <div class="actions">
+            <a href="/monitor/{{ scuola.id }}" class="btn" target="_blank">📺 Apri Monitor TV</a>
+            <a href="/logout/{{ scuola.id }}" class="btn btn-danger">🚪 Esci (Logout)</a>
+        </div>
+    </div>
+
+    <!-- BOX FEEDBACK DI SUCCESSO -->
+    {% set msg = request.query_params.get('successo') %}
+    {% if msg %}
+    <div style="background-color: #2b9348; color: white; padding: 12px; border-radius: 8px; margin-bottom: 25px; text-align: center; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        {% if msg == 'classe' %}✅ Classe aggiunta con successo!
+        {% elif msg == 'orario' %}✅ Orario della lezione salvato correttamente!
+        {% elif msg == 'variazione' %}✅ Variazione oraria pubblicata con successo!
+        {% elif msg == 'colloquio' %}✅ Colloquio docente registrato con successo!
+        {% elif msg == 'avviso' %}✅ Avviso globale aggiornato!
+        {% elif msg == 'password' %}✅ Password della segreteria modificata con successo!
+        {% else %}✅ Operazione completata con successo!
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="grid">
+        <!-- Avviso Globale -->
+        <div class="card">
+            <h3>📢 Avviso Globale (Scorrevole)</h3>
+            <form action="/imposta-avviso/{{ scuola.id }}" method="post">
+                <textarea name="avviso_globale" rows="3" placeholder="Scrivi qui un avviso per tutta la scuola...">{{ scuola.avviso_globale or '' }}</textarea>
+                <button type="submit">Aggiorna Avviso</button>
+            </form>
+        </div>
+
+        <!-- Aggiungi Classe -->
+        <div class="card">
+            <h3>➕ Aggiungi Classe</h3>
+            <form action="/aggiungi-classe/{{ scuola.id }}" method="post">
+                <input type="text" name="nome_classe" placeholder="Nome Classe (es. 3ªA Inf)" required>
+                <button type="submit">Crea Classe</button>
+            </form>
+        </div>
+
+        <!-- Inserisci Orario -->
+        <div class="card card-full">
+            <h3>📅 Gestione Orario Lezioni</h3>
+            <form action="/aggiungi-orario/{{ scuola.id }}" method="post" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <select name="classe_id" required style="grid-column: span 3;">
+                    <option value="">-- Seleziona Classe --</option>
+                    {% for c in scuola.classi %}
+                    <option value="{{ c.id }}">{{ c.nome_classe }}</option>
+                    {% endfor %}
+                </select>
+                <select name="giorno" required>
+                    <option value="Lunedì">Lunedì</option>
+                    <option value="Martedì">Martedì</option>
+                    <option value="Mercoledì">Mercoledì</option>
+                    <option value="Giovedì">Giovedì</option>
+                    <option value="Venerdì">Venerdì</option>
+                    <option value="Sabato">Sabato</option>
+                </select>
+                <select name="ora" required>
+                    <option value="1^ Ora">1^ Ora</option>
+                    <option value="2^ Ora">2^ Ora</option>
+                    <option value="3^ Ora">3^ Ora</option>
+                    <option value="4^ Ora">4^ Ora</option>
+                    <option value="5^ Ora">5^ Ora</option>
+                    <option value="6^ Ora">6^ Ora</option>
+                </select>
+                <input type="text" name="materia" placeholder="Materia" required>
+                <input type="text" name="docente" placeholder="Docente" required>
+                <input type="text" name="docente_sostegno" placeholder="Docente Sostegno (opzionale)">
+                <input type="text" name="aula" placeholder="Aula (opzionale)">
+                <button type="submit" style="grid-column: span 3;">Aggiungi Orario</button>
+            </form>
+        </div>
+
+        <!-- Inserisci Variazione Orario -->
+        <div class="card">
+            <h3>⚡ Inserisci Variazione (es. Entrata Posticipata / Supplenza)</h3>
+            <form action="/aggiungi-variazione/{{ scuola.id }}" method="post">
+                <select name="classe_id" required>
+                    <option value="">-- Seleziona Classe --</option>
+                    {% for c in scuola.classi %}
+                    <option value="{{ c.id }}">{{ c.nome_classe }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="data_variazione" required>
+                <select name="ora_lezione" required>
+                    <option value="Tutta la giornata">Tutta la giornata</option>
+                    <option value="1^ Ora">1^ Ora</option>
+                    <option value="2^ Ora">2^ Ora</option>
+                    <option value="3^ Ora">3^ Ora</option>
+                    <option value="4^ Ora">4^ Ora</option>
+                    <option value="5^ Ora">5^ Ora</option>
+                    <option value="6^ Ora">6^ Ora</option>
+                </select>
+                <input type="text" name="tipo_variazione" placeholder="Tipo (es. Entrata Posticipata, Sostituzione)" required>
+                <textarea name="descrizione" rows="2" placeholder="Dettagli aggiuntivi (opzionale)"></textarea>
+                <button type="submit">Pubblica Variazione</button>
+            </form>
+        </div>
+
+        <!-- Inserisci Colloquio Docente -->
+        <div class="card">
+            <h3>👨‍🏫 Inserisci Orario Colloquio Docente</h3>
+            <form action="/aggiungi-colloquio/{{ scuola.id }}" method="post">
+                <input type="text" name="nome_professore" placeholder="Nome Professore (es. Prof. Rossi)" required>
+                <select name="giorno" required>
+                    <option value="Lunedì">Lunedì</option>
+                    <option value="Martedì">Martedì</option>
+                    <option value="Mercoledì">Mercoledì</option>
+                    <option value="Giovedì">Giovedì</option>
+                    <option value="Venerdì">Venerdì</option>
+                    <option value="Sabato">Sabato</option>
+                </select>
+                <select name="ora_colloquio" required>
+                    <option value="">-- Seleziona Ora --</option>
+                    <option value="1^ Ora">1^ Ora</option>
+                    <option value="2^ Ora">2^ Ora</option>
+                    <option value="3^ Ora">3^ Ora</option>
+                    <option value="4^ Ora">4^ Ora</option>
+                    <option value="5^ Ora">5^ Ora</option>
+                    <option value="6^ Ora">6^ Ora</option>
+                </select>
+                <input type="text" name="aula_ricevimento" placeholder="Aula Ricevimento (opzionale)">
+                <button type="submit">Registra Colloquio</button>
+            </form>
+        </div>
+
+        <!-- Modifica Password -->
+        <div class="card card-full">
+            <h3>🔑 Modifica Password Segreteria</h3>
+            <form action="/modifica-password/{{ scuola.id }}" method="post" style="display: flex; flex-direction: row; gap: 10px;">
+                <input type="password" name="nuova_password" placeholder="Nuova Password Segreteria" required style="flex-grow: 1;">
+                <button type="submit" style="background-color: #f77f00; width: 200px;">Aggiorna Password</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
